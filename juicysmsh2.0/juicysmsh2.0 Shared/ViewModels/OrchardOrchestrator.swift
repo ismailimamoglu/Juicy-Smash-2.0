@@ -124,8 +124,8 @@ final class OrchardOrchestrator {
         } else {
             showInsufficientFunds = true
             triggerHapticHaptics(style: .medium)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.showInsufficientFunds = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.showInsufficientFunds = false
             }
         }
     }
@@ -152,32 +152,37 @@ final class OrchardOrchestrator {
         shakeTrigger += (booster == .megaBlast ? 2 : 1)
         triggerHapticHaptics(style: .heavy) // Impact feel
         
-        Task {
+        Task { [weak self] in
+            guard let self = self else { return }
             var destroyed = Set<HarvestTile>()
             if booster == .hammer {
-                if let t = nectarGrid[row][col] { destroyed.insert(t) }
+                if let t = self.nectarGrid[row][col] { destroyed.insert(t) }
             } else if booster == .megaBlast {
-                for r in max(0, row-1)...min(rows-1, row+1) {
-                    for c in max(0, col-1)...min(cols-1, col+1) {
-                        if let t = nectarGrid[r][c] { destroyed.insert(t) }
+                for r in max(0, row-1)...min(self.rows-1, row+1) {
+                    for c in max(0, col-1)...min(self.cols-1, col+1) {
+                        if let t = self.nectarGrid[r][c] { destroyed.insert(t) }
                     }
                 }
             }
             
-            awardPointsAndEmitParticles(for: destroyed, isRainbow: false)
+            self.awardPointsAndEmitParticles(for: destroyed, isRainbow: false)
             
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                for tile in destroyed { nectarGrid[tile.row][tile.col] = nil }
+                for tile in destroyed { self.nectarGrid[tile.row][tile.col] = nil }
             }
             
             try? await Task.sleep(nanoseconds: 300_000_000)
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { applyOrganicGravity() }
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.applyOrganicGravity() }
+            }
             try? await Task.sleep(nanoseconds: 300_000_000)
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { refillOrchard() }
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.refillOrchard() }
+            }
             try? await Task.sleep(nanoseconds: 400_000_000)
             
-            comboMultiplier = 1
-            await processMatchesAndRefill()
+            self.comboMultiplier = 1
+            await self.processMatchesAndRefill()
         }
     }
     
@@ -211,10 +216,13 @@ final class OrchardOrchestrator {
             }
         }
         
-        Task {
+        Task { [weak self] in
+            guard let self = self else { return }
             try? await Task.sleep(nanoseconds: 400_000_000)
-            comboMultiplier = 1
-            await processMatchesAndRefill()
+            await MainActor.run {
+                self.comboMultiplier = 1
+            }
+            await self.processMatchesAndRefill()
         }
     }
     
@@ -227,8 +235,8 @@ final class OrchardOrchestrator {
         } else {
             showInsufficientFunds = true
             triggerHapticHaptics(style: .medium)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.showInsufficientFunds = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.showInsufficientFunds = false
             }
         }
     }
@@ -261,81 +269,102 @@ final class OrchardOrchestrator {
         
         let rainbowSwap = tile1.state == .rainbow || tile2.state == .rainbow
         
-        Task {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                swapInGrid(row1: tile1.row, col1: tile1.col, row2: tile2.row, col2: tile2.col)
+        Task { [weak self] in
+            guard let self = self else { return }
+            
+            await MainActor.run {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    self.swapInGrid(row1: tile1.row, col1: tile1.col, row2: tile2.row, col2: tile2.col)
+                }
             }
             
             if rainbowSwap {
                 let targetVariety = tile1.state == .rainbow ? tile2.variety : tile1.variety
                 try? await Task.sleep(nanoseconds: 200_000_000)
-                AudioManager.shared.playExplosion(isHuge: true)
-                shakeTrigger += 1
-                triggerHapticHaptics(style: .heavy)
-                
-                var tilesToDestroy = Set<HarvestTile>()
-                for r in 0..<rows {
-                    for c in 0..<cols {
-                        if let t = nectarGrid[r][c], (t.variety == targetVariety || t.state == .rainbow) {
-                            tilesToDestroy.insert(t)
+                await MainActor.run {
+                    AudioManager.shared.playExplosion(isHuge: true)
+                    self.shakeTrigger += 1
+                    self.triggerHapticHaptics(style: .heavy)
+                    
+                    var tilesToDestroy = Set<HarvestTile>()
+                    for r in 0..<self.rows {
+                        for c in 0..<self.cols {
+                            if let t = self.nectarGrid[r][c], (t.variety == targetVariety || t.state == .rainbow) {
+                                tilesToDestroy.insert(t)
+                            }
                         }
+                    }
+                    
+                    self.awardPointsAndEmitParticles(for: tilesToDestroy, isRainbow: true)
+                    
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        for t in tilesToDestroy { self.nectarGrid[t.row][t.col] = nil }
                     }
                 }
                 
-                awardPointsAndEmitParticles(for: tilesToDestroy, isRainbow: true)
-                
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    for t in tilesToDestroy { nectarGrid[t.row][t.col] = nil }
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.applyOrganicGravity() }
                 }
-                
                 try? await Task.sleep(nanoseconds: 300_000_000)
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { applyOrganicGravity() }
-                try? await Task.sleep(nanoseconds: 300_000_000)
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { refillOrchard() }
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.refillOrchard() }
+                }
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 
-                comboMultiplier = 2
-                await processMatchesAndRefill()
+                self.comboMultiplier = 2
+                await self.processMatchesAndRefill()
             } else {
-                let matches = findMatches()
-                let s1 = nectarGrid[tile1.row][tile1.col]
-                let s2 = nectarGrid[tile2.row][tile2.col]
+                let matches = await MainActor.run { return self.findMatches() }
+                let s1 = await MainActor.run { return self.nectarGrid[tile1.row][tile1.col] }
+                let s2 = await MainActor.run { return self.nectarGrid[tile2.row][tile2.col] }
                 let hasSpecial = (s1?.state != .fresh && s1 != nil) || (s2?.state != .fresh && s2 != nil)
                 
                 if matches.isEmpty && !hasSpecial {
-                    movesRemaining += 1
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        swapInGrid(row1: tile1.row, col1: tile1.col, row2: tile2.row, col2: tile2.col)
+                    await MainActor.run {
+                        self.movesRemaining += 1
                     }
-                    isProcessing = false
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    await MainActor.run {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            self.swapInGrid(row1: tile1.row, col1: tile1.col, row2: tile2.row, col2: tile2.col)
+                        }
+                        self.isProcessing = false
+                    }
                 } else if matches.isEmpty && hasSpecial {
                     try? await Task.sleep(nanoseconds: 150_000_000)
-                    var specialTargets = Set<HarvestTile>()
-                    if let ts1 = s1, ts1.state != .fresh { specialTargets.insert(ts1) }
-                    if let ts2 = s2, ts2.state != .fresh { specialTargets.insert(ts2) }
                     
-                    AudioManager.shared.playExplosion(isHuge: true)
-                    shakeTrigger += 1
-                    triggerHapticHaptics(style: .heavy)
-                    
-                    let destroyedTiles = resolveExplosions(initialTargets: specialTargets)
-                    awardPointsAndEmitParticles(for: destroyedTiles, isRainbow: false)
-                    
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        for t in destroyedTiles { nectarGrid[t.row][t.col] = nil }
+                    await MainActor.run {
+                        var specialTargets = Set<HarvestTile>()
+                        if let ts1 = s1, ts1.state != .fresh { specialTargets.insert(ts1) }
+                        if let ts2 = s2, ts2.state != .fresh { specialTargets.insert(ts2) }
+                        
+                        AudioManager.shared.playExplosion(isHuge: true)
+                        self.shakeTrigger += 1
+                        self.triggerHapticHaptics(style: .heavy)
+                        
+                        let destroyedTiles = self.resolveExplosions(initialTargets: specialTargets)
+                        self.awardPointsAndEmitParticles(for: destroyedTiles, isRainbow: false)
+                        
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            for t in destroyedTiles { self.nectarGrid[t.row][t.col] = nil }
+                        }
                     }
                     try? await Task.sleep(nanoseconds: 300_000_000)
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { applyOrganicGravity() }
+                    await MainActor.run {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.applyOrganicGravity() }
+                    }
                     try? await Task.sleep(nanoseconds: 300_000_000)
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { refillOrchard() }
+                    await MainActor.run {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.refillOrchard() }
+                    }
                     try? await Task.sleep(nanoseconds: 400_000_000)
                     
-                    comboMultiplier = 1
-                    await processMatchesAndRefill()
+                    self.comboMultiplier = 1
+                    await self.processMatchesAndRefill()
                 } else {
-                    comboMultiplier = 1
-                    await processMatchesAndRefill()
+                    self.comboMultiplier = 1
+                    await self.processMatchesAndRefill()
                 }
             }
         }
@@ -394,47 +423,64 @@ final class OrchardOrchestrator {
             let hasHeavy = destroyed.contains(where: { $0.state == .bomb || $0.state == .rainbow })
             let hasMedium = destroyed.contains(where: { $0.state == .rowClearer || $0.state == .colClearer })
             
-            if hasHeavy {
-                AudioManager.shared.playExplosion(isHuge: true)
-                shakeTrigger += 1
-            } else {
-                AudioManager.shared.playCombo(multiplier: comboMultiplier)
-            }
-            
-            triggerHapticHaptics(style: hasHeavy ? .heavy : (hasMedium ? .medium : .light))
-            awardPointsAndEmitParticles(for: destroyed, isRainbow: false)
-            
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                for tile in destroyed { nectarGrid[tile.row][tile.col] = nil }
-                for special in specialSpawns { nectarGrid[special.row][special.col] = special }
+            // Execute MainActor specific animation / interactions
+            await MainActor.run {
+                if hasHeavy {
+                    AudioManager.shared.playExplosion(isHuge: true)
+                    self.shakeTrigger += 1
+                } else {
+                    AudioManager.shared.playCombo(multiplier: self.comboMultiplier)
+                }
+                
+                self.triggerHapticHaptics(style: hasHeavy ? .heavy : (hasMedium ? .medium : .light))
+                self.awardPointsAndEmitParticles(for: destroyed, isRainbow: false)
+                
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    for tile in destroyed { self.nectarGrid[tile.row][tile.col] = nil }
+                    for special in specialSpawns { self.nectarGrid[special.row][special.col] = special }
+                }
             }
             
             try? await Task.sleep(nanoseconds: 300_000_000)
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { applyOrganicGravity() }
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.applyOrganicGravity() }
+            }
             try? await Task.sleep(nanoseconds: 300_000_000)
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { refillOrchard() }
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.refillOrchard() }
+            }
             
-            comboMultiplier += 1
+            await MainActor.run {
+                self.comboMultiplier += 1
+            }
+            
             try? await Task.sleep(nanoseconds: 400_000_000)
             
-            if score >= levelConfig.targetScore && gamePhase == .playing {
-                gamePhase = .levelComplete
-                let stars = levelConfig.starsEarned(score: score)
-                
-                let reward = ProgressionManager.shared.coinRewardForLevel(remainingMoves: movesRemaining)
-                self.coinsEarned = reward
-                ProgressionManager.shared.addCoins(amount: reward)
-                
-                ProgressionManager.shared.completeLevel(level: currentLevel, stars: stars)
-                AudioManager.shared.playVictory()
-                triggerHapticHaptics(style: .heavy)
-                isProcessing = false
-                return
+            let matchCheckResolved = await MainActor.run {
+                if self.score >= self.levelConfig.targetScore && self.gamePhase == .playing {
+                    self.gamePhase = .levelComplete
+                    let stars = self.levelConfig.starsEarned(score: self.score)
+                    
+                    let reward = ProgressionManager.shared.coinRewardForLevel(remainingMoves: self.movesRemaining)
+                    self.coinsEarned = reward
+                    ProgressionManager.shared.addCoins(amount: reward)
+                    
+                    ProgressionManager.shared.completeLevel(level: self.currentLevel, stars: stars)
+                    AudioManager.shared.playVictory()
+                    self.triggerHapticHaptics(style: .heavy)
+                    self.isProcessing = false
+                    return true
+                }
+                return false
             }
-            matches = findMatches()
+            if matchCheckResolved { return }
+            
+            matches = await MainActor.run { return self.findMatches() }
         }
-        isProcessing = false
-        checkLevelEnd()
+        await MainActor.run {
+            self.isProcessing = false
+            self.checkLevelEnd()
+        }
     }
     
     // Updates HUD and triggers particles for the destroyed tiles
@@ -457,12 +503,17 @@ final class OrchardOrchestrator {
         floatingScores.append(contentsOf: newFloating)
         activeParticles.append(contentsOf: newParticles)
         
-        Task {
+        Task { [weak self] in
+            guard let self = self else { return }
             try? await Task.sleep(nanoseconds: 1_200_000_000)
             let idsToRemove = Set(newFloating.map { $0.id })
             let pIdsToRemove = Set(newParticles.map { $0.id })
-            self.floatingScores.removeAll { idsToRemove.contains($0.id) }
-            self.activeParticles.removeAll { pIdsToRemove.contains($0.id) }
+            await MainActor.run {
+                self.floatingScores.removeAll { idsToRemove.contains($0.id) }
+            }
+            await MainActor.run {
+                self.activeParticles.removeAll { pIdsToRemove.contains($0.id) }
+            }
         }
     }
     

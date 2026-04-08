@@ -1,8 +1,10 @@
 import SwiftUI
+import StoreKit
 
 /// MainApp.swift contains the new Toon-themed main menu and tab structural foundation.
 struct MainApp: View {
     @State private var orchestrator = OrchardOrchestrator()
+    @StateObject private var storeManager = StoreManager()
 
     
     // Animation states
@@ -226,7 +228,7 @@ struct MainApp: View {
             
             // MARK: - Overlays
             if showShop {
-                ShopView(onClose: {
+                ShopView(storeManager: storeManager, onClose: {
                     withAnimation { showShop = false }
                 })
                 .zIndex(100)
@@ -504,6 +506,8 @@ struct LevelMapView: View {
                     .padding(12)
                     .background(Circle().fill(Color.black.opacity(0.3)))
             }
+            .padding(.top, 8)
+            .padding(.leading, 12)
             Spacer()
             Button(action: onOpenShop) {
                 HStack(spacing: 6) {
@@ -643,11 +647,14 @@ struct LevelPreviewPopup: View {
 }
 
 struct ShopView: View {
+    @ObservedObject var storeManager: StoreManager
     let onClose: () -> Void
     @ObservedObject private var progression = ProgressionManager.shared
     @AppStorage("JuicySmashAdsWatchedToday") private var adsWatchedToday: Int = 0
     @AppStorage("JuicySmashLastAdDate") private var lastAdDate: Double = 0
     let maxAdsPerDay = 10
+    
+    @State private var loadingTimedOut: Bool = false
     
     var body: some View {
         ZStack {
@@ -664,16 +671,82 @@ struct ShopView: View {
                     Image(systemName: "circle.circle.fill").font(.system(size: 28)).foregroundColor(Color(hex: "#FFD700"))
                     Text("\(progression.coins)").font(.system(size: 36, weight: .black, design: .rounded)).foregroundColor(.white)
                 }.padding(.bottom, 40)
+                
+                // Purchase result banner
+                if let message = storeManager.purchaseResultMessage {
+                    Text(message)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Color.green.opacity(0.8)))
+                        .padding(.bottom, 12)
+                        .transition(.scale.combined(with: .opacity))
+                }
+                
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
-                        adOfferCard(); Divider().background(Color.white.opacity(0.2))
-                        iapCard(amount: 100, price: "$0.99", icon: "centsign.circle.fill", popular: false)
-                        iapCard(amount: 500, price: "$3.99", icon: "dollarsign.circle.fill", popular: true)
-                        iapCard(amount: 1200, price: "$7.99", icon: "banknote.fill", popular: false)
+                        adOfferCard()
+                        Divider().background(Color.white.opacity(0.2))
+                        
+                        // Dynamic StoreKit Products
+                        if storeManager.products.isEmpty {
+                            VStack(spacing: 12) {
+                                if loadingTimedOut {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.orange)
+                                    Text("Connection issue. Please try again later.")
+                                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                                        .foregroundColor(.white)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 40)
+                                } else {
+                                    ProgressView()
+                                        .tint(Color(hex: "#FFD700"))
+                                    Text("Preparing juicy deals...")
+                                        .font(.system(size: 14, design: .rounded))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .padding(.vertical, 40)
+                            .onAppear {
+                                loadingTimedOut = false
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                                    if storeManager.products.isEmpty {
+                                        withAnimation { loadingTimedOut = true }
+                                    }
+                                }
+                            }
+                        } else {
+                            ForEach(storeManager.products, id: \.id) { product in
+                                storeKitCard(product: product)
+                            }
+                        }
                     }.padding(.horizontal, 20).padding(.bottom, 40)
                 }
             }
-        }.onAppear { checkAndResetAds() }
+            
+            // Full-screen purchasing overlay
+            if storeManager.isPurchasing {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .overlay(
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(.white)
+                            Text("Processing...")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                    )
+                    .transition(.opacity)
+            }
+        }
+        .animation(.spring(), value: storeManager.purchaseResultMessage != nil)
+        .animation(.easeInOut, value: storeManager.isPurchasing)
+        .onAppear { checkAndResetAds() }
     }
     
     private func checkAndResetAds() {
@@ -710,27 +783,62 @@ struct ShopView: View {
         }.disabled(!canWatch)
     }
     
-    private func iapCard(amount: Int, price: String, icon: String, popular: Bool) -> some View {
-        Button {
-            // TODO: [INTEGRATION] Call StoreKit SDK (e.g. RevenueCat) to initiate purchase for \(price).
-            // NOTE: Move the logic below inside the successful purchase completion handler.
-            progression.addCoins(amount: amount)
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
+    private func storeKitCard(product: Product) -> some View {
+        let isPurchased = storeManager.recentlyPurchased.contains(product.id)
+        let isPopular = storeManager.isPopular(product)
+        
+        return Button {
+            Task {
+                await storeManager.purchase(product)
+            }
         } label: {
             HStack(spacing: 16) {
                 ZStack {
                     Circle().fill(Color.white.opacity(0.2)).frame(width: 60, height: 60)
-                    Image(systemName: icon).font(.system(size: 30)).foregroundColor(Color(hex: "#FFD700"))
+                    Image(systemName: storeManager.iconName(for: product))
+                        .font(.system(size: 30))
+                        .foregroundColor(.white)
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(amount) Coins").font(.system(size: 24, weight: .black)).foregroundColor(.white)
-                    if popular {
-                        Text("MOST POPULAR").font(.system(size: 10, weight: .black)).foregroundColor(.white).padding(4).background(Color.red)
+                    Text(storeManager.displayName(for: product))
+                        .font(.system(size: 24, weight: .black))
+                        .foregroundColor(.white)
+                    if isPopular {
+                        Text("MOST POPULAR")
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(RoundedRectangle(cornerRadius: 4).fill(Color.red))
                     }
                 }
                 Spacer()
-                Text(price).font(.system(size: 18, weight: .bold)).foregroundColor(.black).padding(.horizontal, 16).padding(.vertical, 10).background(Capsule().fill(Color(hex: "#FFD700")))
-            }.padding().background(RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(0.1)))
+                
+                if isPurchased {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.green)
+                        .transition(.scale)
+                } else {
+                    Text(product.displayPrice)
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(Color.white.opacity(0.2)))
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(LinearGradient.gold)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.5), lineWidth: 2)
+                    )
+            )
+            .shimmering()
+            .shadow(color: Color(hex: "#DAA520").opacity(0.4), radius: 8, y: 4)
         }
     }
 }

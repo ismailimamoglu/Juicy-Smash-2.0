@@ -115,10 +115,10 @@ struct HarvestGridView: View {
     // MARK: - HUD Panel
     
     private var hudPanel: some View {
-        VStack(spacing: 20) {
-            // First Row: Back, Level Title, Gold Bar
+        VStack(spacing: 16) {
+            // First Row: Back Button and Gold Bar
             HStack(alignment: .center) {
-                // Jelly Back Button
+                // Left: Back Button
                 Button {
                     onBackToMenu?()
                 } label: {
@@ -128,17 +128,12 @@ struct HarvestGridView: View {
                         .padding(12)
                         .background(Circle().fill(Color.black.opacity(0.3)))
                 }
+                .padding(.top, 8)
+                .padding(.leading, 12)
                 
                 Spacer()
                 
-                Text("LEVEL \(orchestrator.currentLevel)")
-                    .font(.system(size: 26, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.4), radius: 2, y: 2)
-                
-                Spacer()
-                
-                // Gold Bar (LevelMap Style)
+                // Right: Gold Bar
                 Button {
                     onOpenShop?()
                 } label: {
@@ -150,6 +145,7 @@ struct HarvestGridView: View {
                             .font(.system(size: 20, weight: .black, design: .rounded))
                             .foregroundColor(.white)
                             .contentTransition(.numericText())
+                            .shadow(color: .black.opacity(0.2), radius: 1, y: 1)
                             .animation(.spring(), value: ProgressionManager.shared.coins)
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .bold))
@@ -168,7 +164,13 @@ struct HarvestGridView: View {
             }
             .padding(.horizontal, 16)
             
-            // Second Row: Target and Moves (+ Score progress)
+            // Second Row: Dedicated Level Title (Centered)
+            Text("LEVEL \(orchestrator.currentLevel)")
+                .font(.system(size: 28, weight: .black, design: .rounded))
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.4), radius: 2, y: 2)
+            
+            // Third Row: Target and Moves (+ Score progress)
             // Using a clean pill for the stats so they are visible over the background
             HStack(spacing: 16) {
                 // Target & Progress
@@ -222,7 +224,7 @@ struct HarvestGridView: View {
                     Text("MOVES")
                         .font(.system(size: 11, weight: .black, design: .rounded))
                         .foregroundColor(.white.opacity(0.8))
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
                         Image(systemName: "hand.tap.fill").font(.system(size: 12)).foregroundColor(.white)
                         Text("\(orchestrator.movesRemaining)")
                             .font(.system(size: 22, weight: .black, design: .rounded))
@@ -240,7 +242,7 @@ struct HarvestGridView: View {
             )
             .padding(.horizontal, 24)
         }
-        .padding(.top, 10) // Extra safe area padding
+        .padding(.top, 18) // Extra safe area padding
     }
     
     // MARK: - Game Board

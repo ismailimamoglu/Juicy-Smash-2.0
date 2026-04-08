@@ -1,0 +1,115 @@
+{
+  "identifier" : "7A5E3C1B-D42F-4A8E-B9C0-123456789ABC",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "F1A2B3C4-0001-0001-0001-000000000001",
+      "localizations" : [
+        {
+          "description" : "A small bag of 100 gold coins.",
+          "displayName" : "100 Gold Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.ismail.juicysmash2.gold100",
+      "referenceName" : "Gold 100",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "F1A2B3C4-0002-0002-0002-000000000002",
+      "localizations" : [
+        {
+          "description" : "A chest of 500 gold coins. Most popular!",
+          "displayName" : "500 Gold Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.ismail.juicysmash2.gold500",
+      "referenceName" : "Gold 500",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "7.99",
+      "familyShareable" : false,
+      "internalID" : "F1A2B3C4-0003-0003-0003-000000000003",
+      "localizations" : [
+        {
+          "description" : "A royal vault of 1000 gold coins!",
+          "displayName" : "1000 Gold Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.ismail.juicysmash2.gold1000",
+      "referenceName" : "Gold 1000",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "APP_INTERNAL_ID",
+    "_developerTeamID" : "TEAM_ID",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : "",
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -25,3 +25,57 @@ extension Color {
         )
     }
 }
+
+// MARK: - Premium Gold Gradient
+extension LinearGradient {
+    static var gold: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(hex: "#FFD700"), // Gold
+                Color(hex: "#FFFACD"), // Lemon Chiffon (Highlight)
+                Color(hex: "#FFD700"), // Gold
+                Color(hex: "#DAA520"), // Goldenrod (Shadow)
+                Color(hex: "#FFD700")  // Gold
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+// MARK: - Shimmer Effect
+struct Shimmer: ViewModifier {
+    @State private var phase: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geo in
+                    Color.white.opacity(0.3)
+                        .mask(
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.clear, .white.opacity(0.7), .clear],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geo.size.width * 0.5)
+                                .offset(x: -geo.size.width + (geo.size.width * 2 * phase))
+                        )
+                }
+            )
+            .onAppear {
+                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
+                    phase = 1.0
+                }
+            }
+    }
+}
+
+extension View {
+    func shimmering() -> some View {
+        self.modifier(Shimmer())
+    }
+}
