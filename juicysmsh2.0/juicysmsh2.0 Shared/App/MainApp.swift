@@ -204,10 +204,14 @@ struct LevelMapView: View {
     // Page groups with exact requested ranges and thematic colors
     struct WorldData { let name: String; let levels: [Int]; let colors: [Color]; let columns: Int }
     private let worlds: [WorldData] = [
-        WorldData(name: "VILLAGE", levels: Array(1...5), colors: [Color(hex: "#FF80A8"), Color(hex: "#FFB347")], columns: 3),
-        WorldData(name: "FOREST", levels: Array(6...15), colors: [Color(hex: "#7ED957"), Color(hex: "#48C9B0")], columns: 4),
-        WorldData(name: "CITY", levels: Array(16...50), colors: [Color(hex: "#A569BD"), Color(hex: "#5DADE2")], columns: 6),
-        WorldData(name: "SPACE", levels: Array(51...99), colors: [Color(hex: "#10002b"), Color(hex: "#7b2cbf")], columns: 6)
+        // Village — warm golden hour: soft wheat → blush rose
+        WorldData(name: "VILLAGE", levels: Array(1...5),   colors: [Color(hex: "#F7D794"), Color(hex: "#F0A8A8")], columns: 3),
+        // Forest — mossy morning: muted sage → soft teal
+        WorldData(name: "FOREST", levels: Array(6...15),  colors: [Color(hex: "#A8CC8C"), Color(hex: "#78C5A8")], columns: 4),
+        // City — urban dusk: dusty periwinkle → warm slate
+        WorldData(name: "CITY",   levels: Array(16...50), colors: [Color(hex: "#A8B4D4"), Color(hex: "#C4A8C8")], columns: 6),
+        // Space — deep cosmos: midnight navy → deep indigo (intentionally dark)
+        WorldData(name: "SPACE",  levels: Array(51...99), colors: [Color(hex: "#1A1A3E"), Color(hex: "#2D2B6E")], columns: 6)
     ]
     
     var body: some View {
@@ -291,19 +295,28 @@ struct LevelMapView: View {
     }
     
     private func worldGrid(for world: WorldData) -> some View {
-        ScrollView {
-            VStack(spacing: 25) {
-                let rows = chunked(world.levels, into: world.columns)
-                ForEach(0..<rows.count, id: \.self) { rowIndex in
-                    HStack(spacing: 15) {
-                        ForEach(rows[rowIndex], id: \.self) { level in
-                            node(for: level)
+        GeometryReader { geo in
+            let cols = world.columns
+            // Compute node size to always fit within the available width
+            let totalPadding: CGFloat = 32 // 16 each side
+            let spacing: CGFloat = cols >= 6 ? 8 : 14
+            let nodeSize: CGFloat = min(46, (geo.size.width - totalPadding - spacing * CGFloat(cols - 1)) / CGFloat(cols))
+            let rows = chunked(world.levels, into: cols)
+            
+            ScrollView {
+                VStack(spacing: spacing) {
+                    ForEach(0..<rows.count, id: \.self) { rowIndex in
+                        HStack(spacing: spacing) {
+                            ForEach(rows[rowIndex], id: \.self) { level in
+                                node(for: level, size: nodeSize)
+                            }
                         }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 20)
+                .frame(maxWidth: .infinity)
             }
-            .padding(25)
-            .frame(maxWidth: .infinity)
         }
     }
 
@@ -313,10 +326,11 @@ struct LevelMapView: View {
         }
     }
     
-    private func node(for level: Int) -> some View {
+    private func node(for level: Int, size: CGFloat = 42) -> some View {
         let isUnlocked = level <= progression.maxUnlockedLevel || progression.debugUnlockAll
         let colors = progression.dynamicTheme(for: level)
         let isCurrent = level == (progression.levelStars.count + 1)
+        let fontSize: CGFloat = size >= 44 ? 14 : (size >= 38 ? 12 : 11)
         
         return Button {
             if isUnlocked { 
@@ -324,22 +338,27 @@ struct LevelMapView: View {
                 withAnimation { selectedLevel = level } 
             }
         } label: {
-            VStack {
-                ZStack {
-                    Circle()
-                        .fill(isUnlocked ? colors.first!.opacity(0.7) : .gray.opacity(0.3))
-                        .frame(width: 42, height: 42)
-                        .background(Circle().fill(.ultraThinMaterial))
-                        .overlay(Circle().stroke(Color.white, lineWidth: isCurrent ? 3 : 1))
-                    
-                    if isUnlocked {
-                        Text("\(level)").font(.system(size: 14, weight: .black, design: .rounded)).foregroundColor(.white)
-                    } else {
-                        Image(systemName: "lock.fill").foregroundColor(.white.opacity(0.5))
-                    }
+            ZStack {
+                Circle()
+                    .fill(isUnlocked ? colors.first!.opacity(0.85) : .gray.opacity(0.25))
+                    .frame(width: size, height: size)
+                    .background(Circle().fill(.ultraThinMaterial))
+                    .overlay(Circle().stroke(Color.white.opacity(isCurrent ? 1.0 : 0.6), lineWidth: isCurrent ? 3 : 1.5))
+                    .shadow(color: isUnlocked ? (colors.first?.opacity(0.4) ?? .clear) : .clear, radius: 4, y: 2)
+                
+                if isUnlocked {
+                    Text("\(level)")
+                        .font(.system(size: fontSize, weight: .black, design: .rounded))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 1)
+                } else {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: fontSize - 1))
+                        .foregroundColor(.white.opacity(0.5))
                 }
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 

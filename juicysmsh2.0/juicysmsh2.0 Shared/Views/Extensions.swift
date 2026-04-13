@@ -90,7 +90,8 @@ struct WatercolorBackground: View {
     var colors: [Color]? = nil
     
     private var baseColors: [Color] {
-        colors ?? [Color(hex: "#FF007F"), Color(hex: "#7A00E6"), Color(hex: "#00F0FF")]
+        // Warm sunrise — soft peach, golden rose, dusty blush
+        colors ?? [Color(hex: "#FFDAB9"), Color(hex: "#E8A598"), Color(hex: "#C9A8C0")]
     }
     
     var body: some View {
