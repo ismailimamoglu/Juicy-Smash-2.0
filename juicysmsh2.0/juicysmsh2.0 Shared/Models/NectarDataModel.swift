@@ -50,6 +50,7 @@ enum BoosterType: String, CaseIterable, Identifiable {
     case hammer
     case shuffle
     case megaBlast
+    case hint
     
     var id: String { self.rawValue }
     
@@ -58,6 +59,7 @@ enum BoosterType: String, CaseIterable, Identifiable {
         case .hammer: return 50
         case .shuffle: return 70
         case .megaBlast: return 100
+        case .hint: return 10
         }
     }
     
@@ -66,6 +68,7 @@ enum BoosterType: String, CaseIterable, Identifiable {
         case .hammer: return "Hammer"
         case .shuffle: return "Shuffle"
         case .megaBlast: return "Blast"
+        case .hint: return "Hint"
         }
     }
     
@@ -74,6 +77,7 @@ enum BoosterType: String, CaseIterable, Identifiable {
         case .hammer: return "hammer.fill"
         case .shuffle: return "shuffle"
         case .megaBlast: return "flame.fill"
+        case .hint: return "lightbulb.fill"
         }
     }
     
@@ -82,6 +86,7 @@ enum BoosterType: String, CaseIterable, Identifiable {
         case .hammer: return "#FF3B30"
         case .shuffle: return "#AF52DE"
         case .megaBlast: return "#FF9500"
+        case .hint: return "#5AC8FA"
         }
     }
 }
@@ -92,12 +97,27 @@ struct LevelConfig {
     let level: Int
     let targetScore: Int
     let maxMoves: Int
+    let rows: Int
+    let cols: Int
     let iceProbability: Double // Probability of a tile starting frozen
     
     static func forLevel(_ level: Int) -> LevelConfig {
         let targetScore: Int
         let maxMoves: Int
         let iceProb: Double
+        let rows: Int
+        let cols: Int
+        
+        // Dynamic Board Sizing Logic
+        if level <= 5 {
+            rows = 4; cols = 4
+        } else if level <= 15 {
+            rows = 6; cols = 6
+        } else if level <= 50 {
+            rows = 8; cols = 8
+        } else {
+            rows = 10; cols = 10
+        }
         
         switch level {
         case 1:
@@ -121,13 +141,12 @@ struct LevelConfig {
         case 10:
             targetScore = 2400;  maxMoves = 20; iceProb = 0.09
         default:
-            // Level 11+: Real challenge begins
             targetScore = 2400 + ((level - 10) * 300)
             maxMoves = max(12, 20 - (level - 10))
             iceProb = min(0.25, 0.10 + Double(level - 10) * 0.015)
         }
         
-        return LevelConfig(level: level, targetScore: targetScore, maxMoves: maxMoves, iceProbability: iceProb)
+        return LevelConfig(level: level, targetScore: targetScore, maxMoves: maxMoves, rows: rows, cols: cols, iceProbability: iceProb)
     }
     
     func starsEarned(score: Int) -> Int {
@@ -210,55 +229,8 @@ final class HighScoreManager {
     }
 }
 
-// MARK: - Audio Manager
 
-final class AudioManager {
-    static let shared = AudioManager()
-    private var players: [String: AVAudioPlayer] = [:]
-    
-    private init() {
-        // Pre-configure audio session to duck others and be ambient
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            print("Audio session error: \(error)")
-        }
-    }
-    
-    /// Safely plays a sound fire-and-forget. The real audio files need to be bundled.
-    private func playSound(name: String, loop: Bool = false) {
-        // Respect the sound toggle
-        guard ProgressionManager.shared.sfxEnabled else { return }
-        
-        // Find the URL. If the user hasn't added the sounds yet, gracefully return without crashing.
-        guard let url = Bundle.main.url(forResource: name, withExtension: "wav") ??
-                        Bundle.main.url(forResource: name, withExtension: "mp3") else {
-            return
-        }
-        
-        do {
-            // Instantiate a new player for overlapping sounds if needed
-            let player = try AVAudioPlayer(contentsOf: url)
-            player.numberOfLoops = loop ? -1 : 0
-            player.prepareToPlay()
-            player.play()
-            
-            // Minimal caching for looping BGM, otherwise let it ARC release
-            if loop { players[name] = player }
-        } catch {
-            print("Failed to play sound: \(name)")
-        }
-    }
-    
-    func playSwap() { playSound(name: "swap") }
-    func playMatch() { playSound(name: "match") }
-    func playCombo(multiplier: Int) { playSound(name: "combo\(min(multiplier, 3))") }
-    func playExplosion(isHuge: Bool) { playSound(name: isHuge ? "explosion_huge" : "explosion") }
-    func playIceBreak() { playSound(name: "ice_break") }
-    func playVictory() { playSound(name: "victory") }
-    func playFailed() { playSound(name: "failed") }
-}
+// MARK: - Shake Shake Shake
 
 // MARK: - Shake Shake Shake
 struct Shake: GeometryEffect {

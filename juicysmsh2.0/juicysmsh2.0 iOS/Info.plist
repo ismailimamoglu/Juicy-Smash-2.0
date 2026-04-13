@@ -12,5 +12,16 @@
 		<key>UIColorName</key>
 		<string>Black</string>
 	</dict>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use this to deliver personalized ads that support the game's development.</string>
 </dict>
 </plist>

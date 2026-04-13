@@ -4,8 +4,8 @@ import Observation
 
 @Observable
 final class OrchardOrchestrator {
-    let rows = 8
-    let cols = 8
+    var rows: Int { levelConfig.rows }
+    var cols: Int { levelConfig.cols }
     
     // Game state
     var nectarGrid: [[HarvestTile?]] = []
@@ -31,6 +31,14 @@ final class OrchardOrchestrator {
     var showInsufficientFunds: Bool = false
     var coinsEarned: Int = 0
     
+    // Booster & Hint Tracking
+    var hintsUsedThisLevel: Int = 0
+    var boostersUsedThisLevel: [BoosterType: Int] = [:]
+    var hintedTiles: Set<String> = []
+    
+    // Kinetic Storm State
+    var guaranteeKineticCombo: Bool = false
+    
     /// Progress towards the target score (0.0 to 1.0+)
     var scoreProgress: Double {
         guard levelConfig.targetScore > 0 else { return 0 }
@@ -55,6 +63,9 @@ final class OrchardOrchestrator {
         activeBooster = nil
         showInsufficientFunds = false
         coinsEarned = 0
+        hintsUsedThisLevel = 0
+        boostersUsedThisLevel = [:]
+        hintedTiles = []
         seedInitialOrchard()
     }
     
@@ -70,24 +81,25 @@ final class OrchardOrchestrator {
             gamePhase = .levelComplete
             let stars = levelConfig.starsEarned(score: score)
             
-            // Calculate rewards: Base 20 + 5 per remaining move
-            let reward = ProgressionManager.shared.coinRewardForLevel(remainingMoves: movesRemaining)
+            // Calculate rewards: Base Tier + remaining moves bonus
+            let reward = ProgressionManager.shared.coinRewardForLevel(level: currentLevel, remainingMoves: movesRemaining)
             self.coinsEarned = reward
             ProgressionManager.shared.addCoins(amount: reward)
             
             ProgressionManager.shared.completeLevel(level: currentLevel, stars: stars)
-            AudioManager.shared.playVictory()
+            SoundManager.shared.playVictory()
             triggerHapticHaptics(style: .heavy)
         } else if movesRemaining <= 0 && score < levelConfig.targetScore && gamePhase == .playing {
             gamePhase = .levelFailed
-            AudioManager.shared.playFailed()
+            SoundManager.shared.playFailed()
         }
     }
     
     // MARK: - Setup
     
     private func seedInitialOrchard() {
-        nectarGrid = Array(repeating: Array(repeating: nil, count: cols), count: rows)
+        // Correctly initialize grid with current level's dimensions
+        nectarGrid = Array(repeating: Array(repeating: nil, count: self.cols), count: self.rows)
         
         for row in 0..<rows {
             for col in 0..<cols {
@@ -111,21 +123,67 @@ final class OrchardOrchestrator {
     
     // MARK: - Boosters & Extra Moves
     
+    // MARK: - Booster & Economy Rules
+    
+    func maxFreeForType(_ type: BoosterType) -> Int {
+        if currentLevel <= 5 { return 999 } // Effectively infinite for intro
+        if currentLevel <= 15 {
+            return type == .hint ? 3 : 1
+        } else if currentLevel <= 50 {
+            return type == .hint ? 5 : 2
+        } else {
+            return type == .hint ? 7 : 3
+        }
+    }
+    
+    func remainingFreeForType(_ type: BoosterType) -> Int {
+        let maxFree = maxFreeForType(type)
+        if maxFree >= 999 { return 999 }
+        let used = type == .hint ? hintsUsedThisLevel : (boostersUsedThisLevel[type] ?? 0)
+        return max(0, maxFree - used)
+    }
+
     @MainActor
     func activateBooster(_ type: BoosterType) {
         guard gamePhase == .playing, !isProcessing else { return }
         
-        // Use free booster if available
-        if ProgressionManager.shared.hasFreeBooster(type: type) {
+        let freeRemaining = remainingFreeForType(type)
+        
+        if freeRemaining > 0 {
+            // Use per-level free charge
+            if type == .hint {
+                hintsUsedThisLevel += 1
+            } else {
+                boostersUsedThisLevel[type, default: 0] += 1
+            }
+            handleBoosterActivation(type)
+        } else if ProgressionManager.shared.hasFreeBooster(type: type) {
+            // Use persistent inventory
             _ = ProgressionManager.shared.consumeFreeBooster(type: type)
             handleBoosterActivation(type)
-        } else if ProgressionManager.shared.consumeCoins(amount: type.cost) {
-            handleBoosterActivation(type)
         } else {
-            showInsufficientFunds = true
-            triggerHapticHaptics(style: .medium)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-                self?.showInsufficientFunds = false
+            // Purchase with coins
+            // Tiered Pricing for lower levels as a legacy discount
+            let cost: Int
+            if currentLevel >= 6 && currentLevel <= 15 {
+                switch type {
+                case .hammer: cost = 15
+                case .shuffle: cost = 25
+                case .megaBlast: cost = 40
+                case .hint: cost = 10
+                }
+            } else {
+                cost = type.cost
+            }
+            
+            if ProgressionManager.shared.consumeCoins(amount: cost) {
+                handleBoosterActivation(type)
+            } else {
+                showInsufficientFunds = true
+                triggerHapticHaptics(style: .medium)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                    self?.showInsufficientFunds = false
+                }
             }
         }
     }
@@ -133,11 +191,99 @@ final class OrchardOrchestrator {
     @MainActor
     private func handleBoosterActivation(_ type: BoosterType) {
         triggerHapticHaptics(style: .light)
+        
         if type == .shuffle {
             applyShuffle()
+        } else if type == .hint {
+            // Note: Usage count already incremented in activateBooster caller for tiered logic
+            if let match = findPossibleMatch() {
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    if let t1 = nectarGrid[match.r1][match.c1] { hintedTiles.insert(t1.id) }
+                    if let t2 = nectarGrid[match.r2][match.c2] { hintedTiles.insert(t2.id) }
+                }
+                // Clear hint after 3 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                    withAnimation { self?.hintedTiles.removeAll() }
+                }
+            } else {
+                // If no match, auto-shuffle
+                applyShuffle()
+            }
         } else {
             activeBooster = type
         }
+    }
+    
+    private func findPossibleMatch() -> (r1: Int, c1: Int, r2: Int, c2: Int)? {
+        for r in 0..<rows {
+            for c in 0..<cols {
+                // Check right
+                if c < cols - 1 {
+                    if canSwapToMatch(r1: r, c1: c, r2: r, c2: c + 1) { return (r, c, r, c + 1) }
+                }
+                // Check down
+                if r < rows - 1 {
+                    if canSwapToMatch(r1: r, c1: c, r2: r + 1, c2: c) { return (r, c, r + 1, c) }
+                }
+            }
+        }
+        return nil
+    }
+    
+    private func canSwapToMatch(r1: Int, c1: Int, r2: Int, c2: Int) -> Bool {
+        guard let t1 = nectarGrid[r1][c1], let t2 = nectarGrid[r2][c2] else { return false }
+        
+        // Block hints involving frozen tiles
+        if t1.isFrozen || t2.isFrozen { return false }
+        
+        // Mock swap varieties
+        let v1 = t1.variety
+        let v2 = t2.variety
+        
+        // Horizontal check for t1 at (r2, c2)
+        if horizontalMatch(r: r2, c: c2, v: v1, r1: r1, c1: c1) || verticalMatch(r: r2, c: c2, v: v1, r1: r1, c1: c1) { return true }
+        // Horizontal check for t2 at (r1, c1)
+        if horizontalMatch(r: r1, c: c1, v: v2, r1: r2, c1: c2) || verticalMatch(r: r1, c: c1, v: v2, r1: r2, c1: c2) { return true }
+        
+        return false
+    }
+    
+    private func horizontalMatch(r: Int, c: Int, v: FruitVariety, r1: Int, c1: Int) -> Bool {
+        var count = 1
+        // Check left
+        var cc = c - 1
+        while cc >= 0 {
+            if cc == c1 && r == r1 { break } // This is the tile we swapped OUT
+            if let t = nectarGrid[r][cc], t.variety == v { count += 1 } else { break }
+            cc -= 1
+        }
+        // Check right
+        cc = c + 1
+        while cc < cols {
+            if cc == c1 && r == r1 { break }
+            if let t = nectarGrid[r][cc], t.variety == v { count += 1 } else { break }
+            cc += 1
+        }
+        return count >= 3
+    }
+    
+    private func verticalMatch(r: Int, c: Int, v: FruitVariety, r1: Int, c1: Int) -> Bool {
+        var count = 1
+        // Check up
+        var rr = r - 1
+        while rr >= 0 {
+            if rr == r1 && c == c1 { break }
+            if let t = nectarGrid[rr][c], t.variety == v { count += 1 } else { break }
+            rr -= 1
+        }
+        // Check down
+        rr = r + 1
+        while rr < rows {
+            if rr == r1 && c == c1 { break }
+            if let t = nectarGrid[rr][c], t.variety == v { count += 1 } else { break }
+            rr += 1
+        }
+        return count >= 3
     }
     
     @MainActor
@@ -148,7 +294,7 @@ final class OrchardOrchestrator {
         activeBooster = nil
         isProcessing = true
         
-        AudioManager.shared.playExplosion(isHuge: booster == .megaBlast)
+        SoundManager.shared.playExplosion(isHuge: booster == .megaBlast)
         shakeTrigger += (booster == .megaBlast ? 2 : 1)
         triggerHapticHaptics(style: .heavy) // Impact feel
         
@@ -187,9 +333,9 @@ final class OrchardOrchestrator {
     }
     
     @MainActor
-    private func applyShuffle() {
+    private func applyShuffle(isAuto: Bool = false) {
         isProcessing = true
-        AudioManager.shared.playSwap()
+        if !isAuto { SoundManager.shared.playSwap() }
         triggerHapticHaptics(style: .medium)
         
         var allTiles: [HarvestTile] = []
@@ -243,9 +389,60 @@ final class OrchardOrchestrator {
     
     @MainActor
     func watchAdForMoves() {
-        movesRemaining += 5
-        gamePhase = .playing
-        triggerHapticHaptics(style: .heavy)
+        AdManager.shared.showRewardedAd(from: nil) { success in
+            if success {
+                self.movesRemaining += 5
+                self.gamePhase = .playing
+                self.triggerHapticHaptics(style: .heavy)
+            }
+        }
+    }
+    
+    // MARK: - Kinetic Storm
+    
+    @MainActor
+    func executeKineticStorm(vertical: Bool) {
+        guard gamePhase == .playing, !isProcessing else { return }
+        isProcessing = true
+        
+        // Sıçrama etkisini daha çok hissettirmek için tüm tahtayı patlatıyoruz
+        var destroyed = Set<HarvestTile>()
+        for r in 0..<rows {
+            for c in 0..<cols {
+                if let t = nectarGrid[r][c] { // Frozen veya değil her şeyi uçur!
+                    destroyed.insert(t)
+                }
+            }
+        }
+        
+        shakeTrigger += 3
+        
+        // Massive explosion sound
+        SoundManager.shared.playExplosion(isHuge: true)
+        
+        awardPointsAndEmitParticles(for: destroyed, isRainbow: true)
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            for tile in destroyed { self.nectarGrid[tile.row][tile.col] = nil }
+        }
+        
+        guaranteeKineticCombo = true
+        
+        Task { [weak self] in
+            guard let self = self else { return }
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.applyOrganicGravity() }
+            }
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            await MainActor.run {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.5)) { self.refillOrchard() }
+            }
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            
+            self.comboMultiplier = 1
+            await self.processMatchesAndRefill()
+        }
     }
     
     // MARK: - Interactions
@@ -261,7 +458,7 @@ final class OrchardOrchestrator {
         let colDiff = abs(tile1.col - tile2.col)
         guard (rowDiff == 1 && colDiff == 0) || (rowDiff == 0 && colDiff == 1) else { return }
         
-        AudioManager.shared.playSwap()
+        SoundManager.shared.playSwap()
         triggerHapticHaptics(style: .light)
         lastSwappedTiles = (tile1, tile2)
         isProcessing = true
@@ -282,7 +479,7 @@ final class OrchardOrchestrator {
                 let targetVariety = tile1.state == .rainbow ? tile2.variety : tile1.variety
                 try? await Task.sleep(nanoseconds: 200_000_000)
                 await MainActor.run {
-                    AudioManager.shared.playExplosion(isHuge: true)
+                    SoundManager.shared.playExplosion(isHuge: true)
                     self.shakeTrigger += 1
                     self.triggerHapticHaptics(style: .heavy)
                     
@@ -339,7 +536,7 @@ final class OrchardOrchestrator {
                         if let ts1 = s1, ts1.state != .fresh { specialTargets.insert(ts1) }
                         if let ts2 = s2, ts2.state != .fresh { specialTargets.insert(ts2) }
                         
-                        AudioManager.shared.playExplosion(isHuge: true)
+                        SoundManager.shared.playExplosion(isHuge: true)
                         self.shakeTrigger += 1
                         self.triggerHapticHaptics(style: .heavy)
                         
@@ -426,10 +623,10 @@ final class OrchardOrchestrator {
             // Execute MainActor specific animation / interactions
             await MainActor.run {
                 if hasHeavy {
-                    AudioManager.shared.playExplosion(isHuge: true)
+                    SoundManager.shared.playExplosion(isHuge: true)
                     self.shakeTrigger += 1
                 } else {
-                    AudioManager.shared.playCombo(multiplier: self.comboMultiplier)
+                    SoundManager.shared.playCombo(multiplier: self.comboMultiplier)
                 }
                 
                 self.triggerHapticHaptics(style: hasHeavy ? .heavy : (hasMedium ? .medium : .light))
@@ -461,12 +658,12 @@ final class OrchardOrchestrator {
                     self.gamePhase = .levelComplete
                     let stars = self.levelConfig.starsEarned(score: self.score)
                     
-                    let reward = ProgressionManager.shared.coinRewardForLevel(remainingMoves: self.movesRemaining)
+                    let reward = ProgressionManager.shared.coinRewardForLevel(level: self.currentLevel, remainingMoves: self.movesRemaining)
                     self.coinsEarned = reward
                     ProgressionManager.shared.addCoins(amount: reward)
                     
                     ProgressionManager.shared.completeLevel(level: self.currentLevel, stars: stars)
-                    AudioManager.shared.playVictory()
+                    SoundManager.shared.playVictory()
                     self.triggerHapticHaptics(style: .heavy)
                     self.isProcessing = false
                     return true
@@ -479,7 +676,16 @@ final class OrchardOrchestrator {
         }
         await MainActor.run {
             self.isProcessing = false
+            self.ensureValidMoveExists()
             self.checkLevelEnd()
+        }
+    }
+    
+    @MainActor
+    private func ensureValidMoveExists() {
+        if findPossibleMatch() == nil && gamePhase == .playing {
+            print("Game Stuck! Auto-shuffling...")
+            applyShuffle(isAuto: true)
         }
     }
     
@@ -498,7 +704,8 @@ final class OrchardOrchestrator {
             newParticles.append(ParticleEffect(row: t.row, col: t.col, colorHex: t.variety.primaryColorHexString))
         }
         
-        if iceBroken { AudioManager.shared.playIceBreak() }
+        if iceBroken { SoundManager.shared.playIceBreak() }
+        SoundManager.shared.playPopSound()
         
         floatingScores.append(contentsOf: newFloating)
         activeParticles.append(contentsOf: newParticles)
@@ -625,11 +832,22 @@ final class OrchardOrchestrator {
     }
     
     private func refillOrchard() {
+        var forcedComboVariety: FruitVariety? = nil
+        let forceCombo = guaranteeKineticCombo
+        if forceCombo {
+            guaranteeKineticCombo = false
+            forcedComboVariety = FruitVariety.allCases.randomElement()!
+        }
+        
         for col in 0..<cols {
             for row in 0..<rows {
                 if nectarGrid[row][col] == nil {
-                    // New falling tiles are never initially frozen.
-                    let variety = FruitVariety.allCases.randomElement()!
+                    let variety: FruitVariety
+                    if forceCombo && row < 3 && col < 4 {
+                        variety = forcedComboVariety!
+                    } else {
+                        variety = FruitVariety.allCases.randomElement()!
+                    }
                     nectarGrid[row][col] = HarvestTile(variety: variety, row: row, col: col, isFrozen: false)
                 }
             }
