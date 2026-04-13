@@ -34,8 +34,10 @@ class StoreManager: ObservableObject {
     func requestProducts() async {
         do {
             let storeProducts = try await Product.products(for: productIDList)
-            // Fiyata göre küçükten büyüğe sırala
-            self.products = storeProducts.sorted(by: { $0.price < $1.price })
+            // Altın miktarına göre küçükten büyüğe sırala (100 -> 500 -> 1200)
+            self.products = storeProducts.sorted(by: { 
+                (productDict[$0.id]?.coinAmount ?? 0) < (productDict[$1.id]?.coinAmount ?? 0)
+            })
         } catch {
             print("Ürünler çekilemedi: \(error)")
         }

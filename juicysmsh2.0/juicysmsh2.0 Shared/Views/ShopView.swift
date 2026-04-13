@@ -100,7 +100,9 @@ struct ShopView: View {
                             .padding(.top, 60)
                             .transition(.opacity)
                         } else {
-                            ForEach(storeManager.products.sorted(by: { $0.price < $1.price }), id: \.id) { product in
+                            ForEach(storeManager.products.sorted(by: { 
+                                (storeManager.metadata(for: $0.id)?.coinAmount ?? 0) < (storeManager.metadata(for: $1.id)?.coinAmount ?? 0)
+                            }), id: \.id) { product in
                                 ShopProductRow(product: product)
                             }
                             .transition(.move(edge: .bottom).combined(with: .opacity))
