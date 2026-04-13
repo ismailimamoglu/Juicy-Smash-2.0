@@ -8,44 +8,39 @@ struct ShopView: View {
 
     var body: some View {
         ZStack {
-            // Dynamic Theme Background with Glassmorphism
+            // Soft, fixed background — warm cream to dusty rose
             LinearGradient(
-                colors: themeColors,
+                colors: [Color(hex: "#FFF5E6"), Color(hex: "#F0D5C8"), Color(hex: "#D4BCC8")],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
             
-            Rectangle()
-                .fill(.ultraThinMaterial)
-                .ignoresSafeArea()
-            
             VStack(spacing: 25) {
                 // Header
                 Text("SHOP")
                     .font(.system(size: 45, weight: .black, design: .rounded))
-                    .foregroundColor(.yellow)
-                    .shadow(color: .purple, radius: 10)
+                    .foregroundColor(Color(hex: "#E8915A"))
+                    .shadow(color: Color(hex: "#C47A4A").opacity(0.4), radius: 6)
                 
                 // Current Coins
                 HStack {
                     Image(systemName: "circle.circle.fill")
-                        .foregroundColor(.yellow)
+                        .foregroundColor(Color(hex: "#F4A261"))
                         .font(.title)
-                        .shadow(color: .orange, radius: 5)
                     Text("\(ProgressionManager.shared.coins)")
                         .font(.system(size: 32, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 2)
+                        .foregroundColor(Color(hex: "#4A3728"))
+                        .shadow(color: .black.opacity(0.1), radius: 1)
                 }
                 .padding(.horizontal, 30)
                 .padding(.vertical, 15)
                 .background(
                     RoundedRectangle(cornerRadius: 25)
-                        .fill(.ultraThinMaterial)
-                        .shadow(color: Color(hex: "#00F0FF").opacity(0.3), radius: 10)
+                        .fill(Color.white.opacity(0.6))
+                        .shadow(color: Color.black.opacity(0.08), radius: 8)
                 )
-                .overlay(RoundedRectangle(cornerRadius: 25).stroke(Color.white.opacity(0.4), lineWidth: 1.5))
+                .overlay(RoundedRectangle(cornerRadius: 25).stroke(Color.white.opacity(0.5), lineWidth: 1.5))
                 
                 // Ad Button
                 Button(action: {
@@ -73,14 +68,14 @@ struct ShopView: View {
                     .foregroundColor(.white)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(LinearGradient(colors: [themeColors.count > 2 ? themeColors[2] : .purple, themeColors.last ?? .blue], startPoint: .leading, endPoint: .trailing))
+                    .background(LinearGradient(colors: [Color(hex: "#D4956A"), Color(hex: "#C47A4A")], startPoint: .leading, endPoint: .trailing))
                     .cornerRadius(20)
-                    .shadow(color: (themeColors.last ?? .purple).opacity(0.3), radius: 10)
+                    .shadow(color: Color(hex: "#C47A4A").opacity(0.3), radius: 6)
                 }
                 .padding(.horizontal, 40)
                 
                 Divider()
-                    .background(Color.white.opacity(0.3))
+                    .background(Color(hex: "#C4A89A").opacity(0.5))
                     .padding(.horizontal, 60)
                     .padding(.vertical, 5)
                 
@@ -90,12 +85,12 @@ struct ShopView: View {
                         if storeManager.products.isEmpty {
                             VStack(spacing: 20) {
                                 ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .yellow))
+                                    .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "#D4956A")))
                                     .scaleEffect(1.5)
                                 Text("Connecting to Store...")
                                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white.opacity(0.8))
-                                    .opacity(0.6)
+                                    .foregroundColor(Color(hex: "#8A7060"))
+                                    .opacity(0.8)
                             }
                             .padding(.top, 60)
                             .transition(.opacity)
@@ -112,25 +107,24 @@ struct ShopView: View {
                     .padding(.bottom, 20)
                 }
                 
-                // Action Buttons
                 VStack(spacing: 16) {
                     Button(action: {
                         Task { try? await storeManager.restorePurchases() }
                     }) {
                         Text("Restore Purchases")
                             .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(Color(hex: "#8A7060").opacity(0.8))
                             .underline()
                     }
                     
                     Button(action: onClose) {
                         Text("DONE")
                             .font(.system(size: 18, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(Color(hex: "#5A4030"))
                             .padding(.vertical, 14)
                             .padding(.horizontal, 60)
-                            .background(Capsule().fill(Color.white.opacity(0.15)))
-                            .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
+                            .background(Capsule().fill(Color.white.opacity(0.5)))
+                            .overlay(Capsule().stroke(Color(hex: "#C4A89A").opacity(0.5), lineWidth: 1))
                     }
                 }
                 .padding(.bottom, 30)
@@ -157,9 +151,9 @@ private struct ShopProductRow: View {
                 // Large Premium Icon
                 ZStack {
                     Circle()
-                        .fill(LinearGradient(colors: [.yellow, .orange], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(LinearGradient(colors: [Color(hex: "#F4A261"), Color(hex: "#E76F51")], startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(width: 54, height: 54)
-                        .shadow(color: .orange.opacity(0.5), radius: 5)
+                        .shadow(color: Color(hex: "#E76F51").opacity(0.3), radius: 4)
                     
                     Image(systemName: meta?.iconName ?? "circle.grid.hex.fill")
                         .font(.system(size: 26, weight: .bold))
@@ -169,11 +163,11 @@ private struct ShopProductRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(meta?.title ?? product.displayName)
                         .font(.system(size: 18, weight: .black, design: .rounded))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color(hex: "#3D2B1F"))
                     
                     Text(meta?.subtitle ?? "+ \(product.id.split(separator: ".").last ?? "Coins")")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundColor(Color(hex: "#8A7060"))
                 }
                 
                 Spacer()
@@ -181,24 +175,24 @@ private struct ShopProductRow: View {
                 // Premium Price Button
                 Text(product.displayPrice)
                     .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundColor(Color(hex: "#2B4055")) // Deep readable blue/black
+                    .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(
                         Capsule()
-                            .fill(LinearGradient(colors: [Color(hex: "#FFD700"), Color(hex: "#FFA500")], startPoint: .top, endPoint: .bottom))
+                            .fill(LinearGradient(colors: [Color(hex: "#D4956A"), Color(hex: "#C47A4A")], startPoint: .top, endPoint: .bottom))
                     )
-                    .shadow(color: .orange.opacity(0.4), radius: 4, y: 3)
+                    .shadow(color: Color(hex: "#C47A4A").opacity(0.3), radius: 3, y: 2)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(
                 RoundedRectangle(cornerRadius: 24)
-                    .fill(.ultraThinMaterial)
+                    .fill(Color.white.opacity(0.55))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
-                    .stroke(LinearGradient(colors: [.white.opacity(0.5), .clear], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.6), lineWidth: 1)
             )
         }
         .buttonStyle(ScaleButtonStyle())
