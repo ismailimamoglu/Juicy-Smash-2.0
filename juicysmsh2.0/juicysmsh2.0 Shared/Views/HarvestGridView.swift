@@ -484,11 +484,21 @@ struct HarvestGridView: View {
             VStack(spacing: sc * 2) {
                 Button(action: { orchestrator.buyExtraMoves() }) {
                     HStack {
+                        Image(systemName: "plus.circle.fill")
                         Text("Get +5 Moves").font(.system(size: sc * 4, weight: .black))
                         Spacer()
                         Text("50").font(.system(size: sc * 4, weight: .black))
                         Image(systemName: "circle.circle.fill").foregroundColor(.yellow)
-                    }.foregroundColor(.white).padding(.horizontal, sc * 4).padding(.vertical, sc * 3).background(Capsule().fill(Color.green).shadow(radius: 5))
+                    }.foregroundColor(.white).padding(.horizontal, sc * 4).padding(.vertical, sc * 2.8).background(Capsule().fill(Color.green).shadow(radius: 5))
+                }
+                
+                Button(action: { orchestrator.watchAdForMoves() }) {
+                    HStack {
+                        Image(systemName: "play.tv.fill")
+                        Text("Watch Ad (+5 Moves)").font(.system(size: sc * 3.8, weight: .black))
+                        Spacer()
+                        Text("FREE").font(.system(size: sc * 3, weight: .black)).padding(.horizontal, 8).padding(.vertical, 4).background(Capsule().fill(Color.white.opacity(0.2)))
+                    }.foregroundColor(.white).padding(.horizontal, sc * 4).padding(.vertical, sc * 2.8).background(Capsule().fill(LinearGradient(colors: [Color(hex: "#6A5ACD"), Color(hex: "#483D8B")], startPoint: .leading, endPoint: .trailing)).shadow(radius: 5))
                 }
                 
                 Button(action: { orchestrator.retryCurrentLevel() }) {

@@ -389,7 +389,11 @@ final class OrchardOrchestrator {
     
     @MainActor
     func watchAdForMoves() {
-        AdManager.shared.showRewardedAd(from: nil) { success in
+        if !AdManager.shared.isRewardedAdReady {
+            print("Ad not ready")
+        }
+        
+        AdManager.shared.showRewardedAd(from: UIApplication.shared.rootViewController) { success in
             if success {
                 self.movesRemaining += 5
                 self.gamePhase = .playing
