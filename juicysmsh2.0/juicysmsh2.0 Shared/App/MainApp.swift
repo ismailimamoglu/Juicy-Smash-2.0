@@ -248,11 +248,15 @@ struct LevelMapView: View {
                         Text(worlds[currentPage].name).font(.system(size: 14, weight: .bold, design: .rounded)).foregroundColor(.white.opacity(0.7))
                         
                         Button(action: onOpenShop) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "cart.fill")
-                                Text("\(progression.coins)").font(.system(size: 14, weight: .black, design: .rounded))
+                            HStack(spacing: 6) {
+                                Image(systemName: "circle.circle.fill").foregroundColor(.yellow)
+                                Text("\(progression.coins)").font(.system(size: 16, weight: .black, design: .rounded)).foregroundColor(.white)
+                                Image(systemName: "plus.circle.fill").foregroundColor(.green)
                             }
-                            .padding(.horizontal, 12).padding(.vertical, 6).background(.ultraThinMaterial).cornerRadius(15).foregroundColor(.yellow)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(Color.black.opacity(0.4)))
+                            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
                         }
                     }
                     Spacer()
