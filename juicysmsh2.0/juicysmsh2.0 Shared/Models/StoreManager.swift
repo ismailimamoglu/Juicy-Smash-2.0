@@ -17,9 +17,10 @@ class StoreManager: ObservableObject {
     }
     
     private let productDict: [String: ProductMetadata] = [
-        "com.juicysmash.coins100": ProductMetadata(title: "Handful of Coins", subtitle: "+100 Coins", iconName: "circle.grid.hex.fill", coinAmount: 100),
-        "com.juicysmash.coins500": ProductMetadata(title: "Bag of Coins", subtitle: "+500 Coins", iconName: "bitcoinsign.circle.fill", coinAmount: 500),
-        "com.juicysmash.coins1200": ProductMetadata(title: "Treasure Chest", subtitle: "+1200 Coins", iconName: "archivebox.fill", coinAmount: 1200)
+        "com.ismailimamoglu.juicysmash6100.coins100": ProductMetadata(title: "Handful of Coins", subtitle: "+100 Coins", iconName: "circle.grid.hex.fill", coinAmount: 100),
+        "com.ismailimamoglu.juicysmash6100.coins500": ProductMetadata(title: "Bag of Coins", subtitle: "+500 Coins", iconName: "bitcoinsign.circle.fill", coinAmount: 500),
+        "com.ismailimamoglu.juicysmash6100.chest1200": ProductMetadata(title: "Treasure Chest", subtitle: "+1200 Coins", iconName: "archivebox.fill", coinAmount: 1200),
+        "com.ismailimamoglu.juicysmash6100.removeads": ProductMetadata(title: "Remove Ads", subtitle: "Ad-Free Experience", iconName: "nosign", coinAmount: 0)
     ]
     
     var productIDList: [String] { Array(productDict.keys) }
@@ -34,12 +35,13 @@ class StoreManager: ObservableObject {
     func requestProducts() async {
         do {
             let storeProducts = try await Product.products(for: productIDList)
-            // Altın miktarına göre küçükten büyüğe sırala (100 -> 500 -> 1200)
+            // Sort by coin amount (0 for Remove Ads means it'll be first, then 100, 500, 1200)
             self.products = storeProducts.sorted(by: { 
-                (productDict[$0.id]?.coinAmount ?? 0) < (productDict[$1.id]?.coinAmount ?? 0)
+                (productDict[$0.id]?.coinAmount ?? .max) < (productDict[$1.id]?.coinAmount ?? .max) 
             })
+            print("✅ [StoreKit] Successfully fetched \(storeProducts.count) products.")
         } catch {
-            print("Ürünler çekilemedi: \(error)")
+            print("❌ [StoreKit] Failed to fetch products: \(error)")
         }
     }
     
@@ -52,11 +54,14 @@ class StoreManager: ObservableObject {
             case .success(let verification):
                 switch verification {
                 case .verified(let transaction):
-                    // Oyuncuya altını ver
-                    if let meta = productDict[product.id] {
-                        ProgressionManager.shared.coins += meta.coinAmount
+                    print("✅ [StoreKit] Purchase successful for \(product.id)")
+                    // Grant product entitlements
+                    if product.id == "com.ismailimamoglu.juicysmash6100.removeads" {
+                        ProgressionManager.shared.removeAds()
+                    } else if let meta = productDict[product.id] {
+                        ProgressionManager.shared.addCoins(amount: meta.coinAmount)
                     }
-                    // Apple'a işlemin bittiğini haber ver
+                    // Inform Apple that transaction is finished
                     await transaction.finish()
                 case .unverified:
                     print("İşlem doğrulanamadı.")
@@ -73,8 +78,22 @@ class StoreManager: ObservableObject {
     
     @MainActor
     func restorePurchases() async throws {
-        // AppStore.sync() triggers the system to verify all past store transactions and push them to the app. 
-        // Our existing transaction listener (which should ideally be running continuously) or a standard check handles them.
-        try await AppStore.sync()
+        print("🔄 [StoreKit] Starting purchase restoration...")
+        do {
+            try await AppStore.sync()
+            
+            // Also iterate through current entitlements in case `sync()` alone isn't enough to trigger state update
+            for await result in Transaction.currentEntitlements {
+                guard case .verified(let transaction) = result else { continue }
+                if transaction.productID == "com.ismailimamoglu.juicysmash6100.removeads" {
+                    ProgressionManager.shared.removeAds()
+                    print("✅ [StoreKit] Restored Remove Ads entitlement.")
+                }
+            }
+            print("✅ [StoreKit] Purchases restored successfully.")
+        } catch {
+            print("❌ [StoreKit] Restore purchases failed: \(error)")
+            throw error
+        }
     }
 }

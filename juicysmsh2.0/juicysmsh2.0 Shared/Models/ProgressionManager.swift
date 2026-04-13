@@ -17,6 +17,7 @@ final class ProgressionManager: ObservableObject {
     private let kSfxEnabled = "JuicySmashSfxEnabled"
     private let kHapticsEnabled = "JuicySmashHapticsEnabled"
     private let kPreviousMaxLevel = "JuicySmashPreviousMaxLevel"
+    private let kAdsRemoved = "JuicySmashAdsRemoved"
     
     @Published var highScore: Int = 0
     @Published var maxUnlockedLevel: Int = 1
@@ -25,6 +26,7 @@ final class ProgressionManager: ObservableObject {
     @Published var levelStars: [Int: Int] = [:] // Level -> Stars
     @Published var freeBoosters: [String: Int] = [:] // BoosterType.rawValue -> Count
     @Published var previousMaxLevel: Int = 1
+    @Published var adsRemoved: Bool = false
     
     @Published var musicEnabled: Bool = true
     @Published var sfxEnabled: Bool = true
@@ -78,6 +80,8 @@ final class ProgressionManager: ObservableObject {
         if previousMaxLevel == 0 {
             previousMaxLevel = maxUnlockedLevel
         }
+        
+        adsRemoved = defaults.bool(forKey: kAdsRemoved)
     }
     
     // API
@@ -137,7 +141,10 @@ final class ProgressionManager: ObservableObject {
         defaults.set(coins, forKey: kCoins)
     }
     
-
+    func removeAds() {
+        adsRemoved = true
+        defaults.set(true, forKey: kAdsRemoved)
+    }
     
     // MARK: - Kinetic Storm Economy
     
