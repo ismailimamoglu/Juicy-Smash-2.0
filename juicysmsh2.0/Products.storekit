@@ -1,5 +1,15 @@
 {
-  "identifier" : "7A5E3C1B-D42F-4A8E-B9C0-123456789ABC",
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "FC40E0A5",
   "nonRenewingSubscriptions" : [
 
   ],
@@ -7,109 +17,68 @@
     {
       "displayPrice" : "0.99",
       "familyShareable" : false,
-      "internalID" : "F1A2B3C4-0001-0001-0001-000000000001",
+      "internalID" : "943DCCAB",
       "localizations" : [
         {
-          "description" : "A small bag of 100 gold coins.",
-          "displayName" : "100 Gold Coins",
+          "description" : "",
+          "displayName" : "",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.ismail.juicysmash2.gold100",
-      "referenceName" : "Gold 100",
+      "productID" : "com.ismailimamoglu.juicysmash6100.coins100",
+      "referenceName" : "Handful of Coins",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "3.99",
+      "displayPrice" : "2.99",
       "familyShareable" : false,
-      "internalID" : "F1A2B3C4-0002-0002-0002-000000000002",
+      "internalID" : "4A021237",
       "localizations" : [
         {
-          "description" : "A chest of 500 gold coins. Most popular!",
-          "displayName" : "500 Gold Coins",
+          "description" : "",
+          "displayName" : "",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.ismail.juicysmash2.gold500",
-      "referenceName" : "Gold 500",
+      "productID" : "com.ismailimamoglu.juicysmash6100.coins500",
+      "referenceName" : "Bag of Coins",
       "type" : "Consumable"
     },
     {
-      "displayPrice" : "7.99",
+      "displayPrice" : "4.99",
       "familyShareable" : false,
-      "internalID" : "F1A2B3C4-0003-0003-0003-000000000003",
+      "internalID" : "27EE4EE4",
       "localizations" : [
         {
-          "description" : "A royal vault of 1000 gold coins!",
-          "displayName" : "1000 Gold Coins",
+          "description" : "",
+          "displayName" : "",
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.ismail.juicysmash2.gold1000",
-      "referenceName" : "Gold 1000",
+      "productID" : "com.ismailimamoglu.juicysmash6100.chest1200",
+      "referenceName" : "Treasure Chest",
       "type" : "Consumable"
     }
   ],
   "settings" : {
-    "_applicationInternalID" : "APP_INTERNAL_ID",
-    "_developerTeamID" : "TEAM_ID",
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : "",
     "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
     "_storefront" : "USA",
     "_storeKitErrors" : [
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Load Products"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Purchase"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Verification"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Store Sync"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Subscription Status"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Transaction"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Manage Subscriptions Sheet"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Refund Request Sheet"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Offer Code Redeem Sheet"
-      }
-    ]
+
+    ],
+    "_timeRate" : 0
   },
   "subscriptionGroups" : [
 
   ],
   "version" : {
-    "major" : 4,
+    "major" : 5,
     "minor" : 0
   }
 }

@@ -9,12 +9,13 @@
 /* Begin PBXBuildFile section */
 		AC5366922F87C5BE003E03BC /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = AC5366912F87C5BE003E03BC /* GoogleMobileAds */; };
 		ACB584C42F86CF260042687F /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACB584C32F86CF260042687F /* StoreKit.framework */; };
+		ACEDE2DA2F8D848800DF7DE4 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = ACEDE2D92F8D848800DF7DE4 /* Products.storekit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		ACB584C32F86CF260042687F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.4.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
-		ACB584C52F86D22A0042687F /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; name = Products.storekit; path = "../../../Juicy-Smash-2.0/juicysmsh2.0/Products.storekit"; sourceTree = "<group>"; };
 		ACC1E9132F7FDF8C0011CBFC /* juicysmsh2.0.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = juicysmsh2.0.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ACEDE2D92F8D848800DF7DE4 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -96,7 +97,7 @@
 		ACC1E9052F7FDF8B0011CBFC = {
 			isa = PBXGroup;
 			children = (
-				ACB584C52F86D22A0042687F /* Products.storekit */,
+				ACEDE2D92F8D848800DF7DE4 /* Products.storekit */,
 				ACC1E90A2F7FDF8B0011CBFC /* juicysmsh2.0 Shared */,
 				ACC1E9152F7FDF8C0011CBFC /* juicysmsh2.0 iOS */,
 				ACB584C22F86CF260042687F /* Frameworks */,
@@ -180,6 +181,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACEDE2DA2F8D848800DF7DE4 /* Products.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

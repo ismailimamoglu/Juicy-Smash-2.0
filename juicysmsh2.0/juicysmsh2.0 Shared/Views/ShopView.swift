@@ -107,16 +107,6 @@ struct ShopView: View {
                     .padding(.bottom, 20)
                 }
                 
-                VStack(spacing: 16) {
-                    Button(action: {
-                        Task { try? await storeManager.restorePurchases() }
-                    }) {
-                        Text("Restore Purchases")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundColor(Color(hex: "#8A7060").opacity(0.8))
-                            .underline()
-                    }
-                    
                     Button(action: onClose) {
                         Text("DONE")
                             .font(.system(size: 18, weight: .black, design: .rounded))
@@ -126,8 +116,7 @@ struct ShopView: View {
                             .background(Capsule().fill(Color.white.opacity(0.5)))
                             .overlay(Capsule().stroke(Color(hex: "#C4A89A").opacity(0.5), lineWidth: 1))
                     }
-                }
-                .padding(.bottom, 30)
+                    .padding(.bottom, 30)
             }
             .padding(.top, 40)
         }

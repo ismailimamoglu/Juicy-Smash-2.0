@@ -19,8 +19,7 @@ class StoreManager: ObservableObject {
     private let productDict: [String: ProductMetadata] = [
         "com.ismailimamoglu.juicysmash6100.coins100": ProductMetadata(title: "Handful of Coins", subtitle: "+100 Coins", iconName: "circle.grid.hex.fill", coinAmount: 100),
         "com.ismailimamoglu.juicysmash6100.coins500": ProductMetadata(title: "Bag of Coins", subtitle: "+500 Coins", iconName: "bitcoinsign.circle.fill", coinAmount: 500),
-        "com.ismailimamoglu.juicysmash6100.chest1200": ProductMetadata(title: "Treasure Chest", subtitle: "+1200 Coins", iconName: "archivebox.fill", coinAmount: 1200),
-        "com.ismailimamoglu.juicysmash6100.removeads": ProductMetadata(title: "Remove Ads", subtitle: "Ad-Free Experience", iconName: "nosign", coinAmount: 0)
+        "com.ismailimamoglu.juicysmash6100.chest1200": ProductMetadata(title: "Treasure Chest", subtitle: "+1200 Coins", iconName: "archivebox.fill", coinAmount: 1200)
     ]
     
     var productIDList: [String] { Array(productDict.keys) }
@@ -56,9 +55,7 @@ class StoreManager: ObservableObject {
                 case .verified(let transaction):
                     print("✅ [StoreKit] Purchase successful for \(product.id)")
                     // Grant product entitlements
-                    if product.id == "com.ismailimamoglu.juicysmash6100.removeads" {
-                        ProgressionManager.shared.removeAds()
-                    } else if let meta = productDict[product.id] {
+                    if let meta = productDict[product.id] {
                         ProgressionManager.shared.addCoins(amount: meta.coinAmount)
                     }
                     // Inform Apple that transaction is finished
@@ -76,24 +73,4 @@ class StoreManager: ObservableObject {
         }
     }
     
-    @MainActor
-    func restorePurchases() async throws {
-        print("🔄 [StoreKit] Starting purchase restoration...")
-        do {
-            try await AppStore.sync()
-            
-            // Also iterate through current entitlements in case `sync()` alone isn't enough to trigger state update
-            for await result in Transaction.currentEntitlements {
-                guard case .verified(let transaction) = result else { continue }
-                if transaction.productID == "com.ismailimamoglu.juicysmash6100.removeads" {
-                    ProgressionManager.shared.removeAds()
-                    print("✅ [StoreKit] Restored Remove Ads entitlement.")
-                }
-            }
-            print("✅ [StoreKit] Purchases restored successfully.")
-        } catch {
-            print("❌ [StoreKit] Restore purchases failed: \(error)")
-            throw error
-        }
-    }
 }
