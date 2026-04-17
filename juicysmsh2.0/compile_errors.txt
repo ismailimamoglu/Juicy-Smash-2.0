@@ -1,0 +1,7 @@
+  "_main", referenced from:
+      ___debug_main_executable_dylib_entry_point in command-line-aliases-file
+ld: symbol(s) not found for architecture arm64
+/Users/ismailimamoglu/Juicy-Smash-2.0/juicysmsh2.0/juicysmsh2.0.xcodeproj: juicysmsh2.0 iOS: clang: error: linker command failed with exit code 1 (use -v to see invocation)
+
+Ld /Users/ismailimamoglu/Library/Developer/Xcode/DerivedData/juicysmsh2.0-hhhgiaqlrqkfxlhdpfifljeqzwuu/Build/Products/Debug-iphonesimulator/juicysmsh2.0.app/__preview.dylib normal (in target 'juicysmsh2.0 iOS' from project 'juicysmsh2.0')
+    cd /Users/ismailimamoglu/Juicy-Smash-2.0/juicysmsh2.0

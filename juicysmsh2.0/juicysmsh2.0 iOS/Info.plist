@@ -21,5 +21,7 @@
 		<key>UIColorName</key>
 		<string>Black</string>
 	</dict>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Your data will be used to deliver personalized ads to you.</string>
 </dict>
 </plist>

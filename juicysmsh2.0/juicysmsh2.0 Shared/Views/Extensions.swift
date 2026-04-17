@@ -162,36 +162,6 @@ struct WatercolorBackground: View {
     }
 }
 
-// MARK: - Floating Assets Logic
-struct FloatingFruit: Identifiable {
-    let id = UUID()
-    let imageName: String
-    let size: CGFloat
-    let startX: CGFloat
-    let duration: Double
-    let delay: Double
-    let spinRate: Double
-}
-
-struct FloatingFruitView: View {
-    let fruit: FloatingFruit
-    @State private var yOffset: CGFloat = 1000
-    
-    var body: some View {
-        Image(fruit.imageName)
-            .resizable()
-            .frame(width: fruit.size, height: fruit.size)
-            .position(x: fruit.startX, y: yOffset)
-            .opacity(0.6)
-            .blur(radius: 0.5)
-            .onAppear {
-                withAnimation(.linear(duration: fruit.duration).repeatForever( autoreverses: false)) {
-                    yOffset = -100
-                }
-            }
-    }
-}
-
 // MARK: - AdMob Context Helper
 extension UIApplication {
     var rootViewController: UIViewController? {

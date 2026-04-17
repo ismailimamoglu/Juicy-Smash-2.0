@@ -22,26 +22,6 @@
 		ACC1E9242F7FDF8C0011CBFC /* Exceptions for "juicysmsh2.0 Shared" folder in "juicysmsh2.0 iOS" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				App/MainApp.swift,
-				Assets.xcassets,
-				Models/AdManager.swift,
-				Models/ConsentManager.swift,
-				Models/GameLogger.swift,
-				Models/NectarDataModel.swift,
-				Models/ProgressionManager.swift,
-				Models/SoundManager.swift,
-				Models/StoreManager.swift,
-				Resources/explosion_huge.wav,
-				Resources/explosion.wav,
-				Resources/ice_break.wav,
-				Resources/match.wav,
-				Resources/pop.wav,
-				Resources/swap.wav,
-				Resources/victory.wav,
-				ViewModels/OrchardOrchestrator.swift,
-				Views/Extensions.swift,
-				Views/HarvestGridView.swift,
-				Views/ShopView.swift,
 			);
 			target = ACC1E9122F7FDF8C0011CBFC /* juicysmsh2.0 iOS */;
 		};
@@ -129,6 +109,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				ACC1E90A2F7FDF8B0011CBFC /* juicysmsh2.0 Shared */,
 				ACC1E9152F7FDF8C0011CBFC /* juicysmsh2.0 iOS */,
 			);
 			name = "juicysmsh2.0 iOS";
@@ -160,6 +141,7 @@
 			knownRegions = (
 				en,
 				Base,
+				tr,
 			);
 			mainGroup = ACC1E9052F7FDF8B0011CBFC;
 			minimizedProjectReferenceProxies = 1;
@@ -204,7 +186,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = L2V7L2W89V;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "juicysmsh2.0 iOS/Info.plist";
@@ -241,7 +223,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = L2V7L2W89V;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "juicysmsh2.0 iOS/Info.plist";

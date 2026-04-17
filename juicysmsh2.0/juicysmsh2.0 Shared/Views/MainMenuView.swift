@@ -1,43 +1,37 @@
 import SwiftUI
 
-// MARK: - Floating Fruit Model
-private struct FloatingFruit: Identifiable {
-    let id = UUID()
-    let imageName: String
-    let size: CGFloat
-    let startX: CGFloat
-    let duration: Double
-    let delay: Double
-}
-
-// MARK: - Main Menu View
-
 struct MainMenuView: View {
     let onPlay: () -> Void
-    
-    @State private var logoScale: CGFloat = 0.5
-    @State private var logoOpacity: Double = 0
-    @State private var buttonOffset: CGFloat = 60
-    @State private var buttonOpacity: Double = 0
+    let onOpenInfo: () -> Void
+    let onOpenSettings: () -> Void
+
+    // Animation States
+    @State private var logoScale: CGFloat = 0.4
+    @State private var logoOpacity: Double = 0.0
+    @State private var buttonOffset: CGFloat = 80
+    @State private var buttonOpacity: Double = 0.0
     @State private var pulseScale: CGFloat = 1.0
-    @State private var shimmerPhase: CGFloat = -1
-    
+
     private let floatingFruits: [FloatingFruit] = {
-        let assets = ["apple_tile", "orange_tile", "grapes_tile", "pear_tile", "banana_tile", "watermelon_tile"]
+        let assets = [
+            "apple_tile", "orange_tile", "grapes_tile", "pear_tile", "banana_tile",
+            "watermelon_tile",
+        ]
         var allAssets: [String] = []
         for _ in 0..<2 { allAssets.append(contentsOf: assets) }
-        
+
         return allAssets.enumerated().map { i, name in
             FloatingFruit(
                 imageName: name,
                 size: CGFloat.random(in: 40...70),
                 startX: CGFloat.random(in: 30...350),
                 duration: Double.random(in: 8...15),
-                delay: Double.random(in: 0...5)
+                delay: Double.random(in: 0...5),
+                spinRate: Double.random(in: 4...10)
             )
         }
     }()
-    
+
     var body: some View {
         ZStack {
             // Deep premium background
@@ -46,13 +40,13 @@ struct MainMenuView: View {
                     Color(hex: "#071A0F"),
                     Color(hex: "#0D4F2B"),
                     Color(hex: "#0A3D22"),
-                    Color(hex: "#071A0F")
+                    Color(hex: "#071A0F"),
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-            
+
             // Noise-like subtle radial glow
             RadialGradient(
                 colors: [Color(hex: "#1A7A42").opacity(0.3), .clear],
@@ -61,16 +55,41 @@ struct MainMenuView: View {
                 endRadius: 400
             )
             .ignoresSafeArea()
-            
+
             // Floating fruits background
             ForEach(floatingFruits) { fruit in
                 FloatingFruitView(fruit: fruit)
             }
             
+            // Top Right Controls (Info & Settings)
+            VStack {
+                HStack {
+                    Spacer()
+                    HStack(spacing: 16) {
+                        Button(action: onOpenInfo) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white.opacity(0.85))
+                                .shadow(color: .black.opacity(0.4), radius: 4)
+                        }
+                        Button(action: onOpenSettings) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white.opacity(0.85))
+                                .shadow(color: .black.opacity(0.4), radius: 4)
+                        }
+                    }
+                    .padding(.trailing, 24)
+                }
+                .padding(.top, 60)
+                Spacer()
+            }
+            .opacity(buttonOpacity)
+
             // Content
             VStack(spacing: 0) {
                 Spacer()
-                
+
                 // Logo
                 VStack(spacing: 8) {
                     HStack(spacing: 15) {
@@ -85,28 +104,34 @@ struct MainMenuView: View {
                             .frame(width: 60, height: 60)
                     }
                     .padding(.bottom, 10)
-                    
+
                     Text("JUICY")
                         .font(.system(size: 52, weight: .black, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(hex: "#FFD700"), Color(hex: "#FF8C00"), Color(hex: "#FF6347")],
+                                colors: [
+                                    Color(hex: "#FFD700"), Color(hex: "#FF8C00"),
+                                    Color(hex: "#FF6347"),
+                                ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
-                    
+
                     Text("SMASH")
                         .font(.system(size: 52, weight: .black, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color(hex: "#FF6347"), Color(hex: "#FF1493"), Color(hex: "#FF69B4")],
+                                colors: [
+                                    Color(hex: "#FF6347"), Color(hex: "#FF1493"),
+                                    Color(hex: "#FF69B4"),
+                                ],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
                         )
                         .offset(y: -8)
-                    
+
                     Text("2.0")
                         .font(.system(size: 38, weight: .black, design: .rounded))
                         .foregroundColor(Color(hex: "#00E5FF"))
@@ -117,9 +142,9 @@ struct MainMenuView: View {
                 .shadow(color: .black.opacity(0.5), radius: 10, y: 5)
                 .scaleEffect(logoScale)
                 .opacity(logoOpacity)
-                
+
                 Spacer().frame(height: 50)
-                
+
                 // Play Button
                 Button(action: onPlay) {
                     HStack(spacing: 12) {
@@ -151,11 +176,11 @@ struct MainMenuView: View {
                 .scaleEffect(pulseScale)
                 .offset(y: buttonOffset)
                 .opacity(buttonOpacity)
-                
+
                 Spacer().frame(height: 40)
-                
+
                 // High Score
-                let highScore = HighScoreManager.shared.highScore
+                let highScore = ProgressionManager.shared.highScore
                 if highScore > 0 {
                     HStack(spacing: 8) {
                         Image(systemName: "trophy.fill")
@@ -178,9 +203,9 @@ struct MainMenuView: View {
                     .offset(y: buttonOffset)
                     .opacity(buttonOpacity)
                 }
-                
+
                 Spacer()
-                
+
                 // Footer
                 HStack(spacing: 4) {
                     Text("Match & Smash")
@@ -205,56 +230,6 @@ struct MainMenuView: View {
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(1.0)) {
                 pulseScale = 1.06
             }
-        }
-    }
-}
-
-// MARK: - Floating Fruit Animation
-
-private struct FloatingFruitView: View {
-    let fruit: FloatingFruit
-    @State private var yOffset: CGFloat = 800
-    @State private var rotation: Double = 0
-    @State private var opacity: Double = 0
-    
-    var body: some View {
-        Image(fruit.imageName)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: fruit.size, height: fruit.size)
-            .opacity(opacity)
-            .rotationEffect(.degrees(rotation))
-            .position(x: fruit.startX, y: yOffset)
-            .onAppear {
-                // Continuous floating loop
-                startFloating()
-            }
-    }
-    
-    private func startFloating() {
-        // Initial position below screen
-        yOffset = 900
-        opacity = 0
-        rotation = Double.random(in: -30...30)
-        
-        withAnimation(
-            .linear(duration: fruit.duration)
-            .delay(fruit.delay)
-            .repeatForever(autoreverses: false)
-        ) {
-            yOffset = -100
-        }
-        
-        withAnimation(.easeIn(duration: 1.5).delay(fruit.delay)) {
-            opacity = 0.25
-        }
-        
-        withAnimation(
-            .linear(duration: fruit.duration * 0.8)
-            .delay(fruit.delay)
-            .repeatForever(autoreverses: true)
-        ) {
-            rotation = Double.random(in: -180...180)
         }
     }
 }
